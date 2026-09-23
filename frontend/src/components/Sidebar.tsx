@@ -1,4 +1,5 @@
-import { useDesignStore } from '../store/design'
+import { useState, useEffect } from 'react'
+import { useDesignStore, SIZE_PRESETS, MIN_SIZE, MAX_SIZE } from '../store/design'
 import { THEMES } from '../themes/palettes'
 import type { PatternType } from '../types'
 
@@ -12,9 +13,22 @@ const PATTERNS: { value: PatternType; label: string }[] = [
 
 export default function Sidebar() {
   const store = useDesignStore()
+  const activePreset = SIZE_PRESETS.find(p => p.id === store.sizePreset)
+  const [customW, setCustomW] = useState(String(store.width))
+  const [customH, setCustomH] = useState(String(store.height))
+
+  // 切换档位后把输入框同步为当前有效尺寸
+  useEffect(() => {
+    if (store.sizePreset !== 'custom') {
+      setCustomW(String(store.width))
+      setCustomH(String(store.height))
+    }
+  }, [store.sizePreset, store.width, store.height])
+
+  const applyCustom = () => store.setCustomSize(customW, customH)
 
   return (
-    <div className="w-72 bg-gray-900 border-l border-gray-700 p-4 overflow-y-auto flex flex-col gap-4">
+    <div className="w-72 shrink-0 bg-gray-900 border-l border-gray-700 p-4 overflow-y-auto flex flex-col gap-4">
       <h2 className="text-lg font-bold">🎨 SVG 海报设计器</h2>
 
       {/* Pattern */}
@@ -28,6 +42,51 @@ export default function Sidebar() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Size：画布尺寸与存盘尺寸共用此设置，预览与导出始终一致 */}
+      <div>
+        <label className="text-xs text-gray-400 block mb-1">
+          画布尺寸（{store.width} × {store.height}px，预览自动适配窗口）
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {SIZE_PRESETS.map(p => (
+            <button key={p.id} onClick={() => store.setSizePreset(p.id)}
+              className={`px-2 py-1.5 rounded text-xs font-medium ${store.sizePreset===p.id?'bg-indigo-600':'bg-gray-700 hover:bg-gray-600'}`}>
+              {p.name}
+              <span className="block text-[10px] opacity-70">{p.width}×{p.height}</span>
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1 mt-2">
+          <input
+            type="number" min={MIN_SIZE} max={MAX_SIZE} value={customW}
+            onChange={e => setCustomW(e.target.value)}
+            onBlur={applyCustom}
+            onKeyDown={e => { if (e.key === 'Enter') applyCustom() }}
+            className="w-full px-2 py-1 rounded bg-gray-800 text-xs border border-gray-700 focus:border-indigo-500 outline-none"
+            placeholder="宽"
+          />
+          <span className="text-gray-500 text-xs">×</span>
+          <input
+            type="number" min={MIN_SIZE} max={MAX_SIZE} value={customH}
+            onChange={e => setCustomH(e.target.value)}
+            onBlur={applyCustom}
+            onKeyDown={e => { if (e.key === 'Enter') applyCustom() }}
+            className="w-full px-2 py-1 rounded bg-gray-800 text-xs border border-gray-700 focus:border-indigo-500 outline-none"
+            placeholder="高"
+          />
+          <button onClick={applyCustom}
+            className="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-xs font-medium shrink-0">
+            应用
+          </button>
+        </div>
+        <p className="text-[10px] text-gray-500 mt-1">允许范围 {MIN_SIZE}–{MAX_SIZE}px（整数），当前档位：{activePreset ? activePreset.name : '自定义'}</p>
+        {store.sizeError && (
+          <p className="text-xs text-rose-400 bg-rose-950/60 border border-rose-800 rounded px-2 py-1 mt-1">
+            ⚠ {store.sizeError}
+          </p>
+        )}
       </div>
 
       {/* Theme */}
