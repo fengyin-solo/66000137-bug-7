@@ -1,3 +1,12 @@
 @tailwind base; @tailwind components; @tailwind utilities;
 body { margin: 0; background: #030712; color: white; }
 #root { height: 100vh; display: flex; }
+
+/* 预览缩放：SVG 元素按外层适配后的 CSS 尺寸渲染。
+   导出的 SVG 标记本身不带任何样式，仍保留逻辑 width/height 作为成品尺寸 */
+.art-stage svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+

@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react'
 import { useDesignStore } from '../store/design'
 import { THEMES } from '../themes/palettes'
+import { SIZE_PRESETS } from '../config/sizes'
 import type { PatternType } from '../types'
 
 const PATTERNS: { value: PatternType; label: string }[] = [
@@ -13,8 +15,24 @@ const PATTERNS: { value: PatternType; label: string }[] = [
 export default function Sidebar() {
   const store = useDesignStore()
 
+  // 自定义尺寸的输入草稿：合法应用后与 store 同步；
+  // 非法输入只停留在草稿与错误提示里，不会改动画布/存盘尺寸
+  const [widthDraft, setWidthDraft] = useState(String(store.width))
+  const [heightDraft, setHeightDraft] = useState(String(store.height))
+  useEffect(() => {
+    if (!store.sizeError) {
+      setWidthDraft(String(store.width))
+      setHeightDraft(String(store.height))
+    }
+  }, [store.width, store.height, store.sizeError])
+
+  const commitSize = () => store.setDimensions(widthDraft, heightDraft)
+  const activePreset = SIZE_PRESETS.find(
+    p => p.width === store.width && p.height === store.height
+  )
+
   return (
-    <div className="w-72 bg-gray-900 border-l border-gray-700 p-4 overflow-y-auto flex flex-col gap-4">
+    <div className="w-72 shrink-0 bg-gray-900 border-l border-gray-700 p-4 overflow-y-auto flex flex-col gap-4">
       <h2 className="text-lg font-bold">🎨 SVG 海报设计器</h2>
 
       {/* Pattern */}
@@ -44,6 +62,44 @@ export default function Sidebar() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Size: 画布尺寸即存盘尺寸，预览与成品共用 */}
+      <div>
+        <label className="text-xs text-gray-400 block mb-1">
+          画布尺寸（预览自动适配 · 存盘同此尺寸）
+        </label>
+        <div className="grid grid-cols-3 gap-2 mb-2">
+          {SIZE_PRESETS.map(p => (
+            <button key={p.id} onClick={() => store.setSizePreset(p.width, p.height)}
+              className={`px-1 py-1.5 rounded text-[11px] font-medium ${activePreset?.id===p.id?'bg-indigo-600':'bg-gray-700 hover:bg-gray-600'}`}>
+              {p.name}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="number" value={widthDraft}
+            onChange={e => setWidthDraft(e.target.value)}
+            onBlur={commitSize}
+            onKeyDown={e => { if (e.key === 'Enter') commitSize() }}
+            aria-label="画布宽度"
+            className={`w-full bg-gray-800 rounded px-2 py-1 text-xs outline-none ${store.sizeError ? 'border border-rose-500' : 'border border-gray-700 focus:border-indigo-500'}`}
+          />
+          <span className="text-gray-500 text-xs">×</span>
+          <input
+            type="number" value={heightDraft}
+            onChange={e => setHeightDraft(e.target.value)}
+            onBlur={commitSize}
+            onKeyDown={e => { if (e.key === 'Enter') commitSize() }}
+            aria-label="画布高度"
+            className={`w-full bg-gray-800 rounded px-2 py-1 text-xs outline-none ${store.sizeError ? 'border border-rose-500' : 'border border-gray-700 focus:border-indigo-500'}`}
+          />
+          <span className="text-gray-500 text-xs whitespace-nowrap">px</span>
+        </div>
+        {store.sizeError && (
+          <p className="text-[11px] text-rose-400 mt-1">⚠️ {store.sizeError}</p>
+        )}
       </div>
 
       {/* Seed */}

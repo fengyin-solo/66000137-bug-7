@@ -19,3 +19,10 @@ export interface ColorTheme {
   name: string
   colors: string[]
 }
+
+export interface SizePreset {
+  id: string
+  name: string
+  width: number
+  height: number
+}
